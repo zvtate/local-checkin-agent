@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LoCAL Check-in · Solomon Islands</title>
+<link rel="stylesheet" href="checkin.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- Loading -->
+  <div id="screen-loading" class="screen active">
+    <div class="loading-inner">
+      <div class="spinner"></div>
+      <p class="loading-text">Loading…</p>
+    </div>
+  </div>
+
+  <!-- Error -->
+  <div id="screen-error" class="screen">
+    <div class="card">
+      <div class="card-header error-header">
+        <div class="eyebrow">LoCAL Solomon Islands</div>
+        <h1>Link not recognised</h1>
+      </div>
+      <div class="card-body">
+        <p class="result-body">This check-in link appears to be invalid or expired. Please contact your LoCAL focal point for the correct link.</p>
+        <div class="contact-block" id="error-contact"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Screen 1: Question -->
+  <div id="screen-question" class="screen">
+    <div class="card">
+
+      <div class="card-header">
+        <div class="eyebrow" id="q-eyebrow"></div>
+        <h1 id="q-province"></h1>
+        <div class="subhead" id="q-subhead"></div>
+      </div>
+
+      <div class="score-strip">
+        <div class="score-item">
+          <span class="score-val" id="q-ref-score"></span>
+          <span class="score-lbl" id="q-ref-label">last APA reference</span>
+        </div>
+        <div class="score-sep"></div>
+        <div class="score-item">
+          <span class="score-val accent" id="q-avail"></span>
+          <span class="score-lbl">available this check-in</span>
+        </div>
+      </div>
+
+      <div class="card-body">
+        <p class="question-text" id="q-question"></p>
+        <div class="options" id="q-options" role="group" aria-label="Answer options"></div>
+      </div>
+
+    </div>
+    <div class="checkin-meta" id="q-meta"></div>
+  </div>
+
+  <!-- Screen 2: Follow-up -->
+  <div id="screen-followup" class="screen">
+    <div class="card">
+
+      <div class="card-header compact">
+        <div class="eyebrow" id="f-eyebrow"></div>
+        <h1 id="f-province"></h1>
+      </div>
+
+      <div class="followup-context" id="f-context"></div>
+
+      <div class="card-body">
+        <p class="question-text" id="f-question"></p>
+        <div class="options" id="f-options" role="group" aria-label="Follow-up options"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Screen 3: Result -->
+  <div id="screen-result" class="screen">
+    <div class="card">
+
+      <div class="card-header" id="r-header">
+        <div class="eyebrow" id="r-eyebrow"></div>
+        <div class="result-icon-wrap">
+          <span class="result-icon" id="r-icon"></span>
+        </div>
+        <h1 id="r-headline"></h1>
+      </div>
+
+      <!-- Score context -->
+      <div class="score-context">
+        <div class="sc-row">
+          <div class="sc-item">
+            <span class="sc-num" id="r-score-before"></span>
+            <span class="sc-lbl">last APA reference</span>
+          </div>
+          <div class="sc-arrow">→</div>
+          <div class="sc-item">
+            <span class="sc-num green" id="r-score-after"></span>
+            <span class="sc-lbl">if this check-in achieved</span>
+          </div>
+          <div class="sc-divider"></div>
+          <div class="sc-item">
+            <span class="sc-num avail" id="r-avail-pts"></span>
+            <span class="sc-lbl">pts at stake</span>
+          </div>
+        </div>
+        <div class="score-reset-note">All scores re-assessed from zero each APA cycle</div>
+      </div>
+
+      <div class="card-body">
+
+        <!-- What your answer means -->
+        <p class="result-body" id="r-body"></p>
+
+        <!-- This check-in: PM reminders -->
+        <div class="section-label">This check-in</div>
+        <div class="reminders" id="r-reminders"></div>
+
+        <!-- Province-wide priorities -->
+        <div class="section-label priorities-label">Your other quick wins before the APA</div>
+        <div class="priorities" id="r-priorities"></div>
+
+        <!-- Contact -->
+        <div class="section-label">LoCAL support</div>
+        <div class="contact-block" id="r-contact"></div>
+
+      </div>
+    </div>
+
+    <div class="result-footer">
+      <p>Your response has been recorded. You can close this tab.</p>
+    </div>
+  </div>
+
+</div><!-- /#app -->
+<script src="checkin.js"></script>
+</body>
+</html>
