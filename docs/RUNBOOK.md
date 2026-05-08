@@ -1,6 +1,18 @@
-# LoCAL Check-in Agent — Runbook
+# Runbook — LoCAL Check-in Agent
+
+> **Quick links:** [Architecture](./ARCHITECTURE.md) · [API](./API.md) · [Data Model](./DATA_MODEL.md)
 
 Operational reference for running, deploying, and maintaining the server.
+
+## Quick-reference commands
+
+```bash
+pm2 restart local-checkin          # restart after a code change
+pm2 logs local-checkin             # tail logs
+pm2 status                         # check process state
+node seed.js                       # re-seed the database (safe to re-run)
+sudo nginx -t && sudo systemctl reload nginx   # test + reload nginx config
+```
 
 ---
 

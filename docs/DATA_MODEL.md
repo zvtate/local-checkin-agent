@@ -1,33 +1,28 @@
-# LoCAL Check-in Agent — Database Reference
+# Data Model — LoCAL Check-in Agent
 
-SQLite database at `server/local.db`. Schema defined in `server/schema.sql`; all reference data seeded by `server/seed.js` using `better-sqlite3` in a single transaction. Recreate from scratch with `node seed.js`.
+> **Quick links:** [Architecture](./ARCHITECTURE.md) · [API](./API.md) · [Runbook](./RUNBOOK.md)
+
+SQLite at `server/local.db`. Schema: `server/schema.sql`. Seed all reference data: `node seed.js` (idempotent).
 
 ---
 
-## Seeding status
+## All 13 tables at a glance
 
-### Fully seeded (content complete)
-
-| Table | Row count | Notes |
-|---|---|---|
-| `provinces` | 9 | All 9 provinces. `ps_name` is NULL for all — must be populated before automated emails. |
-| `pms` | 18 | PM#1–18, with themes, labels, max scores, and system-wide notes. |
-| `sub_indicators` | 31 | All sub-indicators. Single-indicator PMs (PM#6, PM#10–18) use the PM number as the string id. |
-| `province_scores` | 279 | 9 provinces × 31 sub-indicators. FY 2024/25 APA data, verified against source document (two corrections applied — see Score data notes). |
-| `checkins` | 9 | CI 1–9 with trigger month/day, type, and template strings. |
-| `checkin_pms` | 29 | Check-in to PM mappings. |
-| `checkin_options` | 22 | Answer options for CIs 1, 2, 3, 5, 6, 7, 8, 9. CI 4 has no options (activity-agnostic). |
-
-### Schema-only (no content yet seeded)
-
-| Table | Purpose | Blocking? |
-|---|---|---|
-| `response_templates` | Guidance text shown to PS after each answer | Yes — currently lives as JS in `form.html` |
-| `followup_options` | Answer buttons for follow-up questions | Yes — blocked by `response_templates` |
-| `followup_responses` | Guidance text after follow-up answer | Yes — blocked by `response_templates` |
-| `reminders` | Per-check-in reminder bullet points | No — form.html hardcodes these |
-| `province_priorities` | Per-province quick-win action items | No — form.html hardcodes these |
-| `submissions` | Response log | No — rows are inserted by the API at runtime |
+| Table | Rows | Seeded? | Purpose |
+|-------|------|---------|---------|
+| `provinces` | 9 | Yes | One row per province — slug, score, grant weight |
+| `pms` | 18 | Yes | Performance Measures 1–18 with theme, label, max score |
+| `sub_indicators` | 31 | Yes | Sub-criteria within each PM (1–4 per PM) |
+| `province_scores` | 279 | Yes | FY 2024/25 APA score per (province, sub-indicator) |
+| `checkins` | 9 | Yes | Check-in definitions: trigger month, question, type |
+| `checkin_pms` | 29 | Yes | Which PMs each check-in covers |
+| `checkin_options` | 22 | Yes | Answer buttons (value + label) per check-in |
+| `response_templates` | 0 | **No** | Guidance text per (CI, answer, province) — lives in form.html JS |
+| `followup_options` | 0 | **No** | Follow-up question buttons — blocked by response_templates |
+| `followup_responses` | 0 | **No** | Guidance text after follow-up — blocked by response_templates |
+| `reminders` | 0 | **No** | Per-CI reminder bullets — hardcoded in form.html |
+| `province_priorities` | 0 | **No** | Per-province quick-win actions — hardcoded in form.html |
+| `submissions` | live | Runtime | One row per form submission — grows as PS respond |
 
 ---
 

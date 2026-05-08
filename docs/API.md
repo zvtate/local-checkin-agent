@@ -1,6 +1,20 @@
-# LoCAL Check-in Agent — API Reference
+# API Reference — LoCAL Check-in Agent
 
-Express server at `server/index.js`. Runs on port 3002 (configurable via `PORT` env var). All endpoints return JSON. No authentication.
+> **Quick links:** [Architecture](./ARCHITECTURE.md) · [Data Model](./DATA_MODEL.md) · [Runbook](./RUNBOOK.md)
+
+Express server at `server/index.js`. Port 3002 (override with `PORT` env var). All responses are JSON. No authentication.
+
+## Endpoints at a glance
+
+| Method | Path | Used by | Purpose |
+|--------|------|---------|---------|
+| GET | `/api/provinces` | Admin | All 9 provinces, ordered by score desc |
+| GET | `/api/province/:id` | form.html | Province + sub-scores + PM totals |
+| GET | `/api/checkin/:id` | form.html | CI definition + answer options + PMs covered |
+| GET | `/api/gaps/:province_id/:checkin_id` | form.html | Score gaps for this CI's PMs |
+| POST | `/api/submit` | form.html | Log a submission |
+| GET | `/api/status/:province_id` | form.html | Done/pending status for all 9 CIs |
+| GET | `/api/submissions` | Admin | All submissions across all provinces |
 
 The static frontend (`form.html`) is served from the project root via `express.static` — the Express process serves both the API and the HTML page.
 
