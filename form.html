@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LoCAL Check-in</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+  background: #F1F3F4; min-height: 100vh;
+  padding: 28px 16px 64px; color: #202124;
+}
+.container { max-width: 580px; margin: 0 auto; }
+
+/* Province header */
+.prov-header {
+  background: #1B5E20; border-radius: 12px 12px 0 0;
+  padding: 20px 24px; display: flex; justify-content: space-between; align-items: center;
+}
+.prov-eyebrow { font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px; color: rgba(255,255,255,.6); font-weight: 600; margin-bottom: 4px; }
+.prov-name    { font-size: 22px; font-weight: 800; color: #fff; }
+.prov-sub     { font-size: 12px; color: rgba(255,255,255,.65); margin-top: 3px; }
+.score-badge  { background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.22); border-radius: 10px; padding: 10px 16px; text-align: center; flex-shrink: 0; }
+.score-num    { font-size: 30px; font-weight: 800; color: #fff; line-height: 1; }
+.score-lbl    { font-size: 11px; color: rgba(255,255,255,.5); margin-top: 2px; }
+
+/* Check-in list */
+.ci-list { background: #fff; border-radius: 0 0 12px 12px; box-shadow: 0 2px 8px rgba(0,0,0,.07); overflow: hidden; }
+
+.ci-row {
+  display: flex; align-items: flex-start; gap: 14px;
+  padding: 16px 20px; border-bottom: 1px solid #F0F0F0; cursor: pointer;
+  transition: background .1s;
+}
+.ci-row:last-child { border-bottom: none; }
+.ci-row:hover { background: #FAFAFA; }
+.ci-row.done  { opacity: .65; cursor: default; }
+.ci-row.done:hover { background: #fff; }
+.ci-row.active { background: #F1F8E9; cursor: default; }
+
+.ci-dot {
+  width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 800; margin-top: 1px;
+}
+.ci-dot.done    { background: #E8F5E9; color: #2E7D32; }
+.ci-dot.pending { background: #FFF9C4; color: #F57F17; }
+.ci-dot.open    { background: #E8F0FE; color: #1967D2; }
+.ci-dot.locked  { background: #F5F5F5; color: #BDBDBD; }
+
+.ci-body { flex: 1; min-width: 0; }
+.ci-month { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: #9AA0A6; margin-bottom: 3px; }
+.ci-topic { font-size: 14px; font-weight: 600; color: #202124; }
+.ci-pms   { font-size: 12px; color: #5F6368; margin-top: 2px; }
+.ci-status { font-size: 12px; font-weight: 600; margin-top: 4px; }
+.ci-status.done    { color: #2E7D32; }
+.ci-status.pending { color: #F57F17; }
+.ci-status.open    { color: #1967D2; }
+
+/* Inline question panel */
+.ci-panel { display: none; background: #F8FFF8; border-top: 1px solid #E0F2E0; padding: 16px 20px 20px 66px; }
+.ci-panel.visible { display: block; }
+
+.question { font-size: 14px; font-weight: 600; line-height: 1.5; margin-bottom: 14px; color: #1B5E20; }
+.options  { display: flex; flex-direction: column; gap: 7px; }
+.opt {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; border: 2px solid #C8E6C9; border-radius: 8px;
+  cursor: pointer; font-size: 13px; color: #3C4043; transition: all .12s;
+}
+.opt:hover   { border-color: #43A047; background: #fff; }
+.opt.selected { border-color: #1B5E20; background: #E8F5E9; color: #1B5E20; font-weight: 600; }
+.radio       { width: 18px; height: 18px; border-radius: 50%; border: 2px solid #A5D6A7; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+.opt.selected .radio { border-color: #1B5E20; background: #1B5E20; }
+.radio-dot   { width: 7px; height: 7px; border-radius: 50%; background: #fff; display: none; }
+.opt.selected .radio-dot { display: block; }
+
+.submit-btn {
+  margin-top: 14px; padding: 11px 24px; background: #1B5E20; color: #fff;
+  border: none; border-radius: 8px; font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: background .12s;
+}
+.submit-btn:hover    { background: #2E7D32; }
+.submit-btn:disabled { background: #C8E6C9; cursor: not-allowed; }
+
+/* Result inline */
+.result-panel { display: none; background: #fff; border-top: 1px solid #E0F2E0; padding: 16px 20px 20px 66px; }
+.result-panel.visible { display: block; }
+
+.result-tag {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 700;
+  margin-bottom: 10px;
+}
+.result-tag.ok    { background: #E8F5E9; color: #1B5E20; }
+.result-tag.warn  { background: #FFF8E1; color: #E65100; }
+.result-tag.alert { background: #FFEBEE; color: #C62828; }
+
+.result-body { font-size: 13px; line-height: 1.6; color: #3C4043; }
+.result-body strong { color: #202124; }
+
+.gap-list { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+.gap-item {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 10px 12px; border-radius: 8px; background: #F8F9FA;
+}
+.gap-item.done  { background: #F1F8E9; }
+.gap-item.miss  { background: #FFF3E0; }
+.pm-chip {
+  font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 4px;
+  white-space: nowrap; flex-shrink: 0; margin-top: 1px;
+}
+.pm-chip.done { background: #E8F5E9; color: #2E7D32; }
+.pm-chip.miss { background: #FFF3E0; color: #E65100; }
+.pm-chip.zero { background: #FFEBEE; color: #C62828; }
+.gap-text { font-size: 12px; color: #3C4043; line-height: 1.5; }
+.gap-score { font-size: 11px; font-weight: 700; color: #9AA0A6; margin-top: 2px; }
+
+/* Impact bar */
+.impact-row {
+  display: flex; align-items: center; gap: 10px;
+  margin-top: 14px; padding: 12px 14px; background: #1B5E20; border-radius: 8px; color: #fff;
+}
+.impact-score { text-align: center; }
+.impact-score-n { font-size: 24px; font-weight: 800; line-height: 1; }
+.impact-score-l { font-size: 10px; color: rgba(255,255,255,.55); margin-top: 2px; }
+.impact-arrow   { font-size: 16px; color: rgba(255,255,255,.4); }
+.impact-mult    { margin-left: auto; font-size: 16px; font-weight: 800; color: #A5D6A7; }
+
+/* Footer */
+.footer { margin-top: 12px; font-size: 12px; color: #9AA0A6; text-align: center; }
+
+.hidden { display: none !important; }
+.state-msg { padding: 48px 24px; text-align: center; color: #9AA0A6; font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div id="loading" class="state-msg">Loading…</div>
+  <div id="error"   class="state-msg hidden"></div>
+
+  <div id="main" class="hidden">
+    <div class="prov-header">
+      <div>
+        <div class="prov-eyebrow">LoCAL Solomon Islands · FY 2025/26</div>
+        <div class="prov-name" id="h-name"></div>
+        <div class="prov-sub"  id="h-sub"></div>
+      </div>
+      <div class="score-badge">
+        <div class="score-num" id="h-score"></div>
+        <div class="score-lbl">/ 100 pts</div>
+      </div>
+    </div>
+
+    <div class="ci-list" id="ci-list"></div>
+
+    <div class="footer">LoCAL Solomon Islands · UNCDF / MPGIS</div>
+  </div>
+</div>
+
+<script>
+// ── Check-in metadata (content lives here, not in DB) ─────────
+var CI_META = {
+  1: {
+    topic: 'Confirm CC Focal Point',
+    question: 'Is your CC Focal Point (CCARRO) still in post and formally designated for LoCAL duties this fiscal year?',
+    followup: {
+      condition: function(a){ return a === 'YES'; },
+      question: 'Is their designation confirmed in writing — a formal letter naming LoCAL specifically, with a budget line?',
+      opts: [
+        { value: 'YES', label: 'Yes — confirmed in writing' },
+        { value: 'NO',  label: 'Not yet — verbal only'      },
+      ]
+    },
+    response: function(a, f, p, gaps) {
+      if (a === 'YES' && f === 'YES')  return { type:'ok',    title:'CCARRO confirmed', body:'PM#12 is secure. Brief them now on ' + p.name + '\'s specific planning gaps before the season starts.' };
+      if (a === 'YES' && f === 'NO')   return { type:'warn',  title:'Action needed — formalise in writing', body:'Verbal designation does not score for PM#12. A written letter naming LoCAL duties and a budget line is required. Template available from the LoCAL focal point.' };
+      return { type:'alert', title:'No CCARRO — this blocks multiple PMs', body: p.id === 'rennell-bellona'
+        ? 'Rennell & Bellona is the only province without a designated CCARRO. This single gap is blocking PM#4, PM#5, PM#14, and PM#15. Issue a designation letter this week.'
+        : 'Please confirm a new designation this week and notify MPGIS and UNCDF in writing.' };
+    }
+  },
+  2: {
+    topic: 'CC awareness sessions',
+    question: 'Has your province held at least one CC awareness session this fiscal year — for staff or for communities?',
+    followup: {
+      condition: function(a){ return a === 'BOTH'; },
+      question: 'Are sign-in sheets, a written agenda, and a brief summary filed for each session separately?',
+      opts: [
+        { value: 'YES', label: 'Yes — records filed for both sessions' },
+        { value: 'NO',  label: 'Not all records filed yet'             },
+      ]
+    },
+    response: function(a, f, p, gaps) {
+      var avail = gaps.pms.reduce(function(s,pm){ return s + pm.gap; }, 0);
+      if (a === 'BOTH' && f === 'YES')  return { type:'ok',   title:'Both sessions done and documented', body:'PM#14 and PM#15 are well positioned. Verify community session records show disaggregated attendance by sex and youth — the assessor checks this specifically.' };
+      if (a === 'BOTH' && f === 'NO')   return { type:'warn', title:'Sessions done — documentation still needed', body:'A session without records cannot score. File a signed attendance list, agenda, and one-page summary per session before August. That is all the assessor needs.' };
+      if (a === 'STAFF')   return { type:'warn', title:'Staff done — community session still needed for PM#15', body:'PM#15 (5 pts) requires a separate documented meeting with WDC members on CC risks. A regular WDC meeting with CC on the agenda counts — no new event needed. Add attendance sheet and brief summary.' };
+      if (a === 'COMMUNITY') return { type:'warn', title:'Community done — staff session still needed for PM#14', body:'PM#14 (5 pts) requires a documented training with PG staff on CC adaptation. A half-day internal session is sufficient. Contact your CCARRO to arrange before August.' };
+      return { type:'alert', title:'Eight weeks — still achievable', body:'Up to ' + avail + ' points available from one combined half-day event. Contact the LoCAL focal point this week to confirm a date — they provide facilitation and materials.' };
+    }
+  },
+  3: {
+    topic: 'Climate data and risk assessment',
+    question: 'Is 10-year temperature and rainfall data stored in your PG database?',
+    followup: {
+      condition: function(a){ return a === 'YES'; },
+      question: 'Have trend charts or tables been prepared from this data — showing long-term temperature and rainfall trends?',
+      opts: [
+        { value: 'YES', label: 'Yes — trend analysis prepared'           },
+        { value: 'NO',  label: 'Data stored but no trend analysis yet'   },
+      ]
+    },
+    response: function(a, f, p, gaps) {
+      if (a === 'YES' && f === 'YES')  return { type:'ok',   title:'PM#1 data in good shape', body:'Also check: (a) additional hazard data — flood, landslide, wind, SLR (PM#1b, 1 pt); (b) CRA on file and referenced explicitly in your annual plan project descriptions (PM#2b, 2 pts).' };
+      if (a === 'YES' && f === 'NO')   return { type:'warn', title:'Data stored — trend analysis still needed', body:'PM#1c (1 pt) requires trend charts. This is a one-hour task in Excel from data already in your database. Ask your CCARRO or Planning Officer to do this before August.' };
+      return { type:'alert', title:'No climate data — PM#1 and PM#2 both at risk', body:'Request 10-year temperature and rainfall data from SI Met Services. Contact the LoCAL focal point for a standard request letter template. Without this dataset PM#1 scores 0 across most sub-indicators — that is 5 points that cannot be closed without taking this first step.' };
+    }
+  },
+  4: {
+    topic: 'APA documentation checklist',
+    question: null, // reminder only
+    response: function(a, f, p, gaps) {
+      return { type:'warn', title:'Reminder only — no reply needed', body:'The APA assessment team will visit this quarter. Work done but not documented cannot score. Review the gap summary below and act on any outstanding items before the assessors arrive.' };
+    }
+  },
+  5: {
+    topic: 'Planning season briefing',
+    question: 'Has your CCARRO been briefed on your specific planning gaps before the season starts?',
+    followup: {
+      condition: function(a){ return a === 'YES'; },
+      question: 'Is an ACCAF working session confirmed with the planning team before November?',
+      opts: [
+        { value: 'YES', label: 'Yes — session confirmed'       },
+        { value: 'NO',  label: 'Not yet confirmed'             },
+      ]
+    },
+    response: function(a, f, p, gaps) {
+      if (a === 'YES' && f === 'YES')  return { type:'ok',   title:'Planning season ready', body:'Theme B is worth 35 points — more than any other theme. Prioritise PM#4b (NDS ref), PM#4c (NCCP ref), and PM#9 (engineer sign-off). Standard citation text is available from the LoCAL focal point.' };
+      if (a === 'YES' && f === 'NO')   return { type:'warn', title:'Confirm an ACCAF session this week', body:'One 2–3 hour session with the CCARRO and Planning Officer on the specific ACCAF columns is all that is needed. The planning season will not wait.' };
+      return { type:'alert', title:'Contact LoCAL focal point today', body:'Theme B (35 pts) is entirely determined by what happens November–January. Contact the LoCAL focal point to arrange a focused briefing before November.' };
+    }
+  },
+  6: {
+    topic: 'NDS and NCCP references in plan',
+    question: 'Does your draft annual plan include explicit references to the National Development Strategy 2016–2035 (PM#4b) and the National Climate Change Policy (PM#4c) in the project descriptions?',
+    followup: {
+      condition: function(a){ return a === 'BOTH'; },
+      question: 'Are these references within the actual project text — not only in the plan preamble or a covering note?',
+      opts: [
+        { value: 'YES', label: 'Yes — in the project text'           },
+        { value: 'NO',  label: 'In the preamble only — not the text' },
+      ]
+    },
+    response: function(a, f, p, gaps) {
+      if (a === 'BOTH' && f === 'YES')  return { type:'ok',   title:'NDS + NCCP references confirmed', body:'PM#4b and PM#4c are secured. Also check ACCAF Columns I, J, V, W (PM#10) — are vulnerable beneficiaries named explicitly by category (women, youth, disability)?' };
+      if (a === 'BOTH' && f === 'NO')   return { type:'warn', title:'Move references into the project text', body:'The assessor reads the project description paragraphs, not the preamble. Copy the citation into each project description directly — the LoCAL focal point has standard citation text.' };
+      if (a === 'NDS_ONLY') return { type:'warn', title:'Add NCCP reference — 1 sentence, 1 point', body:'PM#4c requires one sentence per project referencing the National Climate Change Policy. Same approach as the NDS reference. Standard citation from LoCAL focal point.' };
+      return { type:'alert', title:'PM#4b + PM#4c = 3 points for two sentences', body:'Contact the LoCAL focal point for standard citation text. You have until 31 March.' };
+    }
+  },
+  7: {
+    topic: 'Engineer sign-off and tender clause',
+    question: 'Has the Provincial Engineer reviewed and documented climate risk considerations for all PBCRG infrastructure project designs — with a signed note on file?',
+    followup: {
+      condition: function(a){ return a === 'YES_ALL'; },
+      question: 'Do all PBCRG tender documents include a CC considerations clause?',
+      opts: [
+        { value: 'YES', label: 'Yes — CC clause in all tenders' },
+        { value: 'NO',  label: 'Not yet'                        },
+      ]
+    },
+    response: function(a, f, p, gaps) {
+      if (a === 'YES_ALL' && f === 'YES')  return { type:'ok',   title:'PM#9 and PM#13 ready', body:'File these with the annual plan submission. Confirm also that ACCAF Cols AD–AG (PM#8b) are populated with CC-proofing cost estimates for each project.' };
+      if (a === 'YES_ALL' && f === 'NO')   return { type:'warn', title:'Add CC tender clause — 30-minute fix', body:'Contact the LoCAL focal point for the standard CC tender clause template. Applies to all PBCRG procurement documents. Worth up to 5 points (PM#13).' };
+      if (a === 'PARTIAL') return { type:'warn', title:'Complete the remaining design records', body:'Ask the Provincial Engineer to add a brief annotated note to each remaining PBCRG design file: climate standards considered and how resilience was incorporated. One page per project is sufficient for PM#9b.' };
+      return { type:'alert', title:'PM#9 entirely missed — up to 5 points', body:'The Provincial Engineer must formally review and sign off all PBCRG design reports certifying CC risks were considered. This is the highest-value single action before 31 March.' };
+    }
+  },
+  8: {
+    topic: 'Quarterly PBCRG report',
+    question: 'Has the quarterly PBCRG utilisation report been submitted to MPGIS via the ACCAF Data Tracker (Columns X–AM)?',
+    response: function(a, f, p, gaps) {
+      if (a === 'SUBMITTED')   return { type:'ok',   title:'Report submitted', body:'PM#16 is proportional — all four on-time reports earn the full 7 points. Calendar the next report now.' };
+      if (a === 'IN_PROGRESS') return { type:'warn', title:'Submit before the deadline', body:'Each late or missing report reduces PM#16 proportionally. Submit this quarter\'s report as soon as possible.' };
+      return { type:'alert', title:'Report not started — proportional point loss', body:'Each late or missing report costs approximately 1.75 points. Submit via ACCAF Cols X–AM immediately. Contact the LoCAL focal point if you need the tracker template.' };
+    }
+  },
+  9: {
+    topic: 'PBCRG utilisation and execution',
+    question: 'Approximately what percentage of your PBCRG allocation has been committed or spent this fiscal year?',
+    followup: {
+      condition: function(a){ return a === 'OVER_75'; },
+      question: 'Are payment receipts, progress reports, and ACCAF tracker updates filed for all completed works?',
+      opts: [
+        { value: 'YES', label: 'Yes — all records filed' },
+        { value: 'NO',  label: 'Not all filed yet'       },
+      ]
+    },
+    response: function(a, f, p, gaps) {
+      if (a === 'OVER_75' && f === 'YES')  return { type:'ok',   title:'Well positioned on PM#17 and PM#18', body:'Ensure the ACCAF tracker reflects actual progress against the annual plan. The assessor cross-checks tracker entries against the plan.' };
+      if (a === 'OVER_75' && f === 'NO')   return { type:'warn', title:'File records before the APA', body:'Evidence of spend and delivery must be in writing. Contact the LoCAL focal point this week — there is still time to file records before the assessors arrive.' };
+      if (a === 'FIFTY_75') return { type:'warn', title:'Expedite remaining projects', body:'Review which approved projects have not started procurement and expedite. For PM#18, partial delivery with a documented progress note counts.' };
+      return { type:'alert', title:'Management attention needed today', body:'PM#17 scales directly with utilisation — 40% spend is approximately 4 points out of 10. Review what is blocking implementation and contact MPGIS and the LoCAL focal point immediately.' };
+    }
+  }
+};
+
+var API = '';
+var province, statusMap = {};
+var activeCI = null, pendingAnswer = null, pendingFollowup = null;
+
+function qs(n){ return new URLSearchParams(window.location.search).get(n) || ''; }
+
+async function load() {
+  var pId = qs('p').toLowerCase();
+  if (!pId) { showError('Add ?p=guadalcanal to the URL.'); return; }
+
+  try {
+    var [pRes, sRes] = await Promise.all([
+      fetch(API + '/api/province/' + pId),
+      fetch(API + '/api/status/'   + pId),
+    ]);
+    if (!pRes.ok) { showError('Province not found: ' + pId); return; }
+    province = await pRes.json();
+    var statusArr = await sRes.json();
+    statusArr.forEach(function(s){ statusMap[s.checkin_id] = s; });
+    renderPage();
+  } catch(e) {
+    showError('Could not reach the API. Is the server running?');
+  }
+}
+
+function showError(msg) {
+  document.getElementById('loading').classList.add('hidden');
+  document.getElementById('error').textContent = msg;
+  document.getElementById('error').classList.remove('hidden');
+}
+
+function renderPage() {
+  document.getElementById('loading').classList.add('hidden');
+  document.getElementById('main').classList.remove('hidden');
+
+  document.getElementById('h-name').textContent  = province.name + ' Province';
+  document.getElementById('h-score').textContent = province.current_score;
+
+  // Count outstanding
+  var outstanding = Object.values(statusMap).filter(function(s){ return !s.done; }).length;
+  document.getElementById('h-sub').textContent =
+    outstanding === 0
+      ? 'All check-ins complete ✓'
+      : outstanding + ' check-in' + (outstanding === 1 ? '' : 's') + ' outstanding';
+
+  var list = document.getElementById('ci-list');
+  list.innerHTML = '';
+
+  Object.keys(CI_META).forEach(function(idStr) {
+    var id   = parseInt(idStr, 10);
+    var meta = CI_META[id];
+    var st   = statusMap[id] || { done: false };
+
+    var dotClass = st.done ? 'done' : (meta.question ? 'open' : 'pending');
+    var statusText = st.done
+      ? '✓ Done'
+      : (meta.question ? 'Awaiting response' : 'Reminder');
+
+    var row = document.createElement('div');
+    row.className = 'ci-row' + (st.done ? ' done' : '');
+    row.id = 'ci-row-' + id;
+    row.innerHTML =
+      '<div class="ci-dot ' + dotClass + '">' + id + '</div>' +
+      '<div class="ci-body">' +
+        '<div class="ci-month">' + getMonth(id) + '</div>' +
+        '<div class="ci-topic">' + meta.topic + '</div>' +
+        '<div class="ci-pms">'  + getPMTags(id) + '</div>' +
+        '<div class="ci-status ' + dotClass + '">' + statusText + '</div>' +
+      '</div>';
+
+    if (!st.done && meta.question) {
+      row.addEventListener('click', function(){ toggleQuestion(id); });
+    }
+
+    list.appendChild(row);
+
+    // Question panel
+    var panel = document.createElement('div');
+    panel.className = 'ci-panel';
+    panel.id = 'panel-' + id;
+    if (meta.question) {
+      panel.innerHTML = buildQuestionHTML(id, meta);
+    }
+    list.appendChild(panel);
+
+    // Result panel (show if answered)
+    var resultPanel = document.createElement('div');
+    resultPanel.className = 'result-panel';
+    resultPanel.id = 'result-' + id;
+    list.appendChild(resultPanel);
+
+    // If reminder-only, show immediately
+    if (!meta.question && !st.done) {
+      showReminderResult(id);
+    }
+  });
+}
+
+function getMonth(id) {
+  var months = {1:'April',2:'June',3:'July',4:'August',5:'October',6:'December',7:'February',8:'Quarterly',9:'September'};
+  return months[id] || '';
+}
+
+function getPMTags(id) {
+  var tags = {
+    1:'PM#12',2:'PM#14 + PM#15',3:'PM#1 + PM#2',
+    4:'PM#1 · PM#7–9 · PM#12–15',5:'PM#3–9 (35 pts)',
+    6:'PM#4 + PM#5 + PM#10 + PM#11',7:'PM#9 + PM#13',
+    8:'PM#16',9:'PM#17 + PM#18'
+  };
+  return tags[id] || '';
+}
+
+function buildQuestionHTML(id, meta) {
+  var opts = meta.followup
+    ? (meta.questOpts || getOptions(id))
+    : getOptions(id);
+  var optsHTML = getOptions(id).map(function(o) {
+    return '<div class="opt" data-val="' + o.value + '" onclick="selectOpt(this,' + id + ')">' +
+      '<div class="radio"><div class="radio-dot"></div></div>' + o.label + '</div>';
+  }).join('');
+  return '<div class="question">' + meta.question + '</div>' +
+    '<div class="options" id="opts-' + id + '">' + optsHTML + '</div>' +
+    '<button class="submit-btn" id="btn-' + id + '" disabled onclick="submitCI(' + id + ')">Continue →</button>';
+}
+
+function getOptions(id) {
+  var map = {
+    1:[{value:'YES',label:'Yes — in post and formally designated'},{value:'NO',label:'No / position has changed'}],
+    2:[{value:'BOTH',label:'Both — staff and community sessions done'},{value:'STAFF',label:'Staff session only'},{value:'COMMUNITY',label:'Community session only'},{value:'NONE',label:'Not yet this fiscal year'}],
+    3:[{value:'YES',label:'Yes — data is in the PG database'},{value:'NO',label:'No — not yet available'}],
+    5:[{value:'YES',label:'Yes — CCARRO has been briefed'},{value:'NO',label:'Not yet briefed'}],
+    6:[{value:'BOTH',label:'Both NDS and NCCP referenced'},{value:'NDS_ONLY',label:'NDS only'},{value:'NEITHER',label:'Neither referenced yet'}],
+    7:[{value:'YES_ALL',label:'Yes — all designs documented'},{value:'PARTIAL',label:'Partially done'},{value:'NO',label:'Not yet'}],
+    8:[{value:'SUBMITTED',label:'Submitted'},{value:'IN_PROGRESS',label:'In progress'},{value:'NOT_STARTED',label:'Not started'}],
+    9:[{value:'OVER_75',label:'Over 75% committed or spent'},{value:'FIFTY_75',label:'50–75%'},{value:'UNDER_50',label:'Under 50%'}],
+  };
+  return map[id] || [];
+}
+
+function toggleQuestion(id) {
+  var panel = document.getElementById('panel-' + id);
+  var isOpen = panel.classList.contains('visible');
+  // Close all
+  document.querySelectorAll('.ci-panel').forEach(function(p){ p.classList.remove('visible'); });
+  document.querySelectorAll('.ci-row').forEach(function(r){ r.classList.remove('active'); });
+  if (!isOpen) {
+    panel.classList.add('visible');
+    document.getElementById('ci-row-' + id).classList.add('active');
+  }
+}
+
+function selectOpt(el, id) {
+  document.querySelectorAll('#opts-' + id + ' .opt').forEach(function(o){ o.classList.remove('selected'); });
+  el.classList.add('selected');
+  pendingAnswer = el.dataset.val;
+  document.getElementById('btn-' + id).disabled = false;
+  activeCI = id;
+}
+
+function submitCI(id) {
+  var meta = CI_META[id];
+  if (meta.followup && meta.followup.condition(pendingAnswer)) {
+    showFollowup(id, meta);
+  } else {
+    finaliseCI(id, pendingAnswer, null);
+  }
+}
+
+function showFollowup(id, meta) {
+  var panel = document.getElementById('panel-' + id);
+  var optsHTML = meta.followup.opts.map(function(o) {
+    return '<div class="opt" data-val="' + o.value + '" onclick="selectFollowup(this,' + id + ')">' +
+      '<div class="radio"><div class="radio-dot"></div></div>' + o.label + '</div>';
+  }).join('');
+  panel.innerHTML =
+    '<div class="question">' + meta.followup.question + '</div>' +
+    '<div class="options" id="fu-opts-' + id + '">' + optsHTML + '</div>';
+}
+
+function selectFollowup(el, id) {
+  document.querySelectorAll('#fu-opts-' + id + ' .opt').forEach(function(o){ o.classList.remove('selected'); });
+  el.classList.add('selected');
+  pendingFollowup = el.dataset.val;
+  setTimeout(function(){ finaliseCI(id, pendingAnswer, pendingFollowup); }, 220);
+}
+
+async function finaliseCI(id, answer, followup) {
+  // Hide question panel
+  document.getElementById('panel-' + id).classList.remove('visible');
+  document.getElementById('ci-row-' + id).classList.remove('active');
+
+  // Fetch gaps
+  var gRes  = await fetch(API + '/api/gaps/' + province.id + '/' + id);
+  var gaps  = await gRes.json();
+
+  // Log
+  fetch(API + '/api/submit', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ province_id: province.id, checkin_id: id, answer_value: answer, followup_value: followup }),
+  }).catch(function(){});
+
+  // Build response
+  var meta = CI_META[id];
+  var res  = meta.response(answer, followup, province, gaps);
+  renderResult(id, res, gaps, answer, followup);
+
+  // Update status dot
+  var COMPLETE = {
+    1: function(a,f){ return a==='YES'&&f==='YES'; },
+    2: function(a,f){ return a==='BOTH'&&f==='YES'; },
+    3: function(a,f){ return a==='YES'&&f==='YES'; },
+    5: function(a,f){ return a==='YES'&&f==='YES'; },
+    6: function(a,f){ return a==='BOTH'&&f==='YES'; },
+    7: function(a,f){ return a==='YES_ALL'&&f==='YES'; },
+    8: function(a){ return a==='SUBMITTED'; },
+    9: function(a,f){ return a==='OVER_75'&&f==='YES'; },
+  };
+  var done = (COMPLETE[id] || function(){ return false; })(answer, followup);
+  var dot  = document.querySelector('#ci-row-' + id + ' .ci-dot');
+  var lbl  = document.querySelector('#ci-row-' + id + ' .ci-status');
+  if (done) {
+    dot.className = 'ci-dot done';
+    lbl.className = 'ci-status done';
+    lbl.textContent = '✓ Done';
+    document.getElementById('ci-row-' + id).classList.add('done');
+  } else {
+    dot.className = 'ci-dot pending';
+    lbl.className = 'ci-status pending';
+    lbl.textContent = 'Follow-up needed';
+  }
+
+  pendingAnswer = null; pendingFollowup = null;
+}
+
+function showReminderResult(id) {
+  fetch(API + '/api/gaps/' + province.id + '/' + id).then(function(r){ return r.json(); }).then(function(gaps) {
+    var meta = CI_META[id];
+    var res  = meta.response(null, null, province, gaps);
+    renderResult(id, res, gaps, null, null);
+  });
+}
+
+function renderResult(id, res, gaps, answer, followup) {
+  var panel = document.getElementById('result-' + id);
+
+  var totalGap = gaps.pms.reduce(function(s,p){ return s+p.gap; }, 0);
+  var newScore, newWeight, mult;
+  if (totalGap > 0) {
+    newScore  = province.current_score + totalGap;
+    newWeight = newScore * newScore;
+    mult      = (newWeight / province.exp_weight).toFixed(2);
+  }
+
+  var gapsHTML = gaps.pms.map(function(pm) {
+    var pct = pm.max_score > 0 ? pm.scored / pm.max_score : 0;
+    var chipCls = pct === 1 ? 'done' : (pct === 0 ? 'zero' : 'miss');
+    var itemCls = pct === 1 ? 'done' : 'miss';
+    return '<div class="gap-item ' + itemCls + '">' +
+      '<span class="pm-chip ' + chipCls + '">PM#' + pm.pm_number + '</span>' +
+      '<div>' +
+        '<div class="gap-text">' + pm.label + '</div>' +
+        '<div class="gap-score">' + pm.scored + ' / ' + pm.max_score + ' pts scored</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+
+  var impactHTML = totalGap > 0
+    ? '<div class="impact-row">' +
+        '<div class="impact-score"><div class="impact-score-n">' + province.current_score + '</div><div class="impact-score-l">now</div></div>' +
+        '<div class="impact-arrow">→</div>' +
+        '<div class="impact-score"><div class="impact-score-n">' + newScore + '</div><div class="impact-score-l">if closed</div></div>' +
+        '<div class="impact-mult">' + mult + '×</div>' +
+      '</div>'
+    : '';
+
+  panel.innerHTML =
+    '<div class="result-tag ' + res.type + '">' +
+      (res.type==='ok' ? '✓' : res.type==='warn' ? '→' : '!') + ' ' + res.title +
+    '</div>' +
+    '<div class="result-body">' + res.body + '</div>' +
+    '<div class="gap-list">' + gapsHTML + '</div>' +
+    impactHTML;
+
+  panel.classList.add('visible');
+}
+
+load();
+</script>
+</body>
+</html>

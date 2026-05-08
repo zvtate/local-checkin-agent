@@ -151,6 +151,19 @@ No other files need to change.
 
 ---
 
+## Documentation
+
+Project documentation lives in [`docs/`](./docs/):
+
+| Document | Contents |
+|---|---|
+| [docs/README.md](./docs/README.md) | Project summary and doc index |
+| [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) | System flow, components, database schema, scoring logic, open items |
+| [docs/APA_COMPLIANCE_LOGIC.md](./docs/APA_COMPLIANCE_LOGIC.md) | All 18 PM definitions, per-province scores, gap analysis, check-in messages |
+| [docs/DATA_MODEL.md](./docs/DATA_MODEL.md) | SQLite table reference, seeding status, data corrections |
+
+---
+
 ## File structure
 
 ```
@@ -162,5 +175,10 @@ checkin-agent/
 │   └── webhook.gs        ← Google Apps Script (paste into script.google.com)
 ├── email-templates/
 │   └── checkin-2.html    ← email HTML per check-in (link updated per province)
+├── server/
+│   ├── schema.sql        ← SQLite schema (13 tables)
+│   ├── seed.js           ← seeds all reference data
+│   └── local.db          ← SQLite database (not committed)
+├── docs/                 ← project documentation
 └── README.md             ← this file
 ```
